@@ -1546,7 +1546,7 @@
 <div class="agent-login-overlay show" id="agentLoginOverlay">
   <div class="agent-login-box">
     <p class="brand">USERS_ACCES</p>
-    <p class="sub">Connectez-vous avec votre nom et votre mot de passe pour accéder au portail.</p>
+    <p class="sub">Connectez-vous ici.</p>
     <div class="field">
       <label for="agentLoginName">Nom d'agent</label>
       <input type="text" id="agentLoginName" placeholder="Votre nom" autocomplete="username">
@@ -1581,7 +1581,7 @@
   <button type="button" class="nav-btn" id="portalBtnMails" onclick="showApp('mails')">
     <span class="dot"></span> Mails
   </button>
-  <button type="button" class="nav-btn" id="portalBtnImpayes" onclick="showApp('impayes')">
+  <button type="button" class="nav-btn" id="portalBtnImpayes" onclick="showApp('Encaissements')">
     <span class="dot"></span> Encaissements
   </button>
   <button type="button" class="nav-btn" id="portalBtnSelfcare" onclick="showApp('selfcare')">
@@ -7644,15 +7644,15 @@
 
   const monthMs = makeMulti(document.getElementById('ttMsMonth'), {
     allLabel:'Tous les mois', plural:'mois sélectionnés', labelId:'ttLblMonth',
-    onChange: () => { weekMs.setOptions(weekOptions()); dateMs.setOptions(dateOptions()); render(); }
+    onChange: () => { refreshFilters(true); render(); }
   });
   const weekMs = makeMulti(document.getElementById('ttMsWeek'), {
     allLabel:'Toutes les semaines', plural:'semaines sélectionnées', labelId:'ttLblWeek',
-    onChange: () => { dateMs.setOptions(dateOptions()); render(); }
+    onChange: () => { refreshFilters(true); render(); }
   });
   const dateMs = makeMulti(document.getElementById('ttMsDate'), {
     allLabel:'Toutes les dates', plural:'dates sélectionnées', labelId:'ttLblDate',
-    onChange: () => render()
+    onChange: () => { refreshFilters(true); render(); }
   });
 
   function firstYear(){
@@ -7663,9 +7663,10 @@
   function monthSpan(v){ const [y, m] = v.split('-').map(Number); return { from:new Date(y, m, 1).getTime(), to:new Date(y, m + 1, 1).getTime() }; }
   function weekSpan(v){ const [y, m, d] = v.split('-').map(Number); const a = new Date(y, m - 1, d); return { from:a.getTime(), to:addDays(a, 7).getTime() }; }
   // Jours (début de journée, ms) où il existe au moins un temps enregistré, du plus récent au plus ancien.
-  function existingDays(){
+  function existingDays(name){
     const set = new Set(), now = Date.now();
     view().forEach(x => {
+      if (name && x.agent !== name) return;
       const xe = x.end == null ? now : x.end;
       if (xe - x.start < 1000) return; // durée nulle : aucune activité réellement effectuée
       const e = startOfDay(new Date(xe)).getTime();
@@ -7678,30 +7679,37 @@
     });
     return Array.from(set).sort((p, q) => q - p);
   }
-  // Mois qui ont des données uniquement.
+  // ---- Filtres interdépendants : chaque liste (Mois, Semaine, Date, Nom) ne propose que
+  // les valeurs ayant une activité réelle compatible avec les AUTRES filtres sélectionnés. ----
+  function dateSpan(v){ const [y, m, d] = v.split('-').map(Number); const a = new Date(y, m - 1, d); return { from:a.getTime(), to:addDays(a, 1).getTime() }; }
+  // Intervalles retenus par les filtres sélectionnés, en ignorant le filtre `skip` ('month' | 'week' | 'date').
+  function selIv(skip){
+    let iv = [{ from:-Infinity, to:Infinity }];
+    const ms = monthMs.values(), ws = weekMs.values(), ds = dateMs.values();
+    if (skip !== 'month' && ms.length) iv = intersect(iv, mergeIv(ms.map(monthSpan)));
+    if (skip !== 'week' && ws.length) iv = intersect(iv, mergeIv(ws.map(weekSpan)));
+    if (skip !== 'date' && ds.length) iv = intersect(iv, mergeIv(ds.map(dateSpan)));
+    return iv;
+  }
+  // Jours avec activité (pour le nom choisi) compatibles avec les autres filtres.
+  function daysFor(skip){
+    const iv = selIv(skip);
+    return existingDays(scopeSel.value).filter(t => covered(iv, t, addDays(new Date(t), 1).getTime()));
+  }
   function monthOptions(){
     const seen = new Set(), out = [];
-    existingDays().forEach(t => {
+    daysFor('month').forEach(t => {
       const d = new Date(t), v = `${d.getFullYear()}-${d.getMonth()}`;
       if (!seen.has(v)) { seen.add(v); out.push({ value:v, label:`${MONTHS[d.getMonth()]} ${d.getFullYear()}` }); }
     });
     return out;
   }
-  // Dates qui ont des données uniquement, limitées aux mois / semaines cochés.
   function dateOptions(){
-    let iv = [{ from:-Infinity, to:Infinity }];
-    const ms = monthMs.values(), ws = weekMs.values();
-    if (ms.length) iv = intersect(iv, mergeIv(ms.map(monthSpan)));
-    if (ws.length) iv = intersect(iv, mergeIv(ws.map(weekSpan)));
-    return existingDays().filter(t => covered(iv, t, addDays(new Date(t), 1).getTime()))
-      .map(t => ({ value:isoDate(new Date(t)), label:dmy(new Date(t)) }));
+    return daysFor('date').map(t => ({ value:isoDate(new Date(t)), label:dmy(new Date(t)) }));
   }
-  // Semaines proposées : uniquement celles qui ont des données (et qui touchent les mois cochés).
   function weekOptions(){
-    const mIv = monthMs.values().map(monthSpan);
     const seen = new Set(), out = [];
-    existingDays().forEach(t => {
-      if (mIv.length && !covered(mIv, t, addDays(new Date(t), 1).getTime())) return;
+    daysFor('week').forEach(t => {
       const mon = mondayOf(new Date(t)), v = isoDate(mon);
       if (seen.has(v)) return;
       seen.add(v);
@@ -7709,19 +7717,40 @@
     });
     return out; // existingDays() est trié du plus récent au plus ancien
   }
-  function rebuildPeriodOptions(){ monthMs.setOptions(monthOptions()); weekMs.setOptions(weekOptions()); dateMs.setOptions(dateOptions()); }
-  let periodSig = '';
-  // Nouvelle session ou nouveau jour : on met à jour les listes sans toucher aux cases cochées.
-  function syncPeriodOptions(){
-    const sig = view().length + '|' + isoDate(new Date());
-    if (sig === periodSig) return;
-    periodSig = sig;
-    rebuildPeriodOptions();
+  // Noms ayant au moins une activité (temps > 0) dans la période Mois ∩ Semaine ∩ Date sélectionnée.
+  function nameOptions(){
+    const iv = selIv(''), now = Date.now(), set = new Set();
+    view().forEach(s => { if (s.agent && !set.has(s.agent) && overlapIn(s, -Infinity, Infinity, now, iv) > 0) set.add(s.agent); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
   }
-  (function initPeriodFilters(){
-    periodSig = '';
-    syncPeriodOptions();
-  })();
+  function setNames(names){
+    const key = names.join('|');
+    if (key !== lastNames) {
+      lastNames = key;
+      const prev = scopeSel.value;
+      scopeSel.innerHTML = '<option value="">Tous</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      scopeSel.value = names.includes(prev) ? prev : '';
+    } else if (scopeSel.value && !names.includes(scopeSel.value)) scopeSel.value = '';
+  }
+  let periodSig = '', lastNames = '';
+  function filterState(){ return [monthMs.values().join(), weekMs.values().join(), dateMs.values().join(), scopeSel.value].join('|'); }
+  // Recalcule les 4 listes jusqu'à stabilité (une sélection devenue sans activité est retirée automatiquement).
+  function refreshFilters(force){
+    const sig = view().length + '|' + isoDate(new Date()) + '|' + filterState();
+    if (!force && sig === periodSig) return;
+    for (let i = 0; i < 5; i++) {
+      const before = filterState();
+      monthMs.setOptions(monthOptions());
+      weekMs.setOptions(weekOptions());
+      dateMs.setOptions(dateOptions());
+      setNames(nameOptions());
+      if (filterState() === before) break;
+    }
+    periodSig = view().length + '|' + isoDate(new Date()) + '|' + filterState();
+  }
+  function rebuildPeriodOptions(){ refreshFilters(true); }
+  function syncPeriodOptions(){ refreshFilters(false); }
+  refreshFilters(true);
 
   // ---- Période = liste d'intervalles [from, to) en ms (to exclusif) ----
   function covered(iv, a, b){ return iv.some(v => v.from < b && v.to > a); }
@@ -7776,18 +7805,7 @@
     return { rows, R };
   }
 
-  // Liste des noms du filtre : tous les utilisateurs ayant des temps enregistrés
-  // (+ l'agent connecté), sans toucher à la sélection en cours.
-  let lastNames = '';
-  function refreshNames(){
-    const names = Array.from(new Set(view().map(s => s.agent).filter(Boolean).concat(agent() || []))).sort((a,b) => a.localeCompare(b, 'fr'));
-    const key = names.join('|');
-    if (key === lastNames) return;
-    lastNames = key;
-    const prev = scopeSel.value;
-    scopeSel.innerHTML = '<option value="">Tous</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-    scopeSel.value = names.includes(prev) ? prev : '';
-  }
+  function refreshNames(){ refreshFilters(false); }
   let lastSummary = [], lastLog = [], lastAgentSummary = [];
 
 
@@ -7963,7 +7981,7 @@
       }
     }
   }
-  scopeSel.addEventListener('change', render);
+  scopeSel.addEventListener('change', () => { refreshFilters(true); render(); });
   logView.addEventListener('change', render);
 
   // ---- Suppression : supprime les sessions terminées de la sélection en cours (période + nom). ----
