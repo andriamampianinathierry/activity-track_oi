@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>ACTIVITY_TRACK</title>
+<title>ACTIVITY_TRACK </title>
 <style>
 /* ==========================================================================
    Styles communs / RPI OI (variables par défaut au niveau :root)
@@ -1121,6 +1121,7 @@
 }
 .tt-btn-sec:hover{ border-color:var(--accent); color:var(--ink); }
 .tt-btn-sec.danger:hover{ border-color:var(--rejete); color:var(--rejete); }
+.tt-del-btn{ margin-left:auto; }
 
 /* ==========================================================================
    Module SELFCARE — module indépendant (styles scopés sous #app-selfcare)
@@ -1545,7 +1546,7 @@
 <div class="agent-login-overlay show" id="agentLoginOverlay">
   <div class="agent-login-box">
     <p class="brand">USERS_ACCES</p>
-    <p class="sub">Connectez-vous ici.</p>
+    <p class="sub">Connectez-vous avec votre nom et votre mot de passe pour accéder au portail.</p>
     <div class="field">
       <label for="agentLoginName">Nom d'agent</label>
       <input type="text" id="agentLoginName" placeholder="Votre nom" autocomplete="username">
@@ -3162,7 +3163,7 @@
   </div>
 
   <div class="panel">
-    <div class="list-head"><h2>Détail par activité</h2><button class="export-btn" id="ttExportSummaryBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
+    <div class="list-head"><h2>Détail par activité</h2><button type="button" class="tt-btn-sec danger tt-del-btn" id="ttDelSummaryBtn" title="Supprimer les sessions de la sélection en cours">Supprimer</button><button class="export-btn" id="ttExportSummaryBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
           <path d="M7 10l5 5 5-5"></path>
@@ -3187,7 +3188,7 @@
   </div>
 
   <div class="panel">
-    <div class="list-head"><h2>Durée par activité et par jour</h2><button class="export-btn" id="ttExportDayBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
+    <div class="list-head"><h2>Durée par activité et par jour</h2><button type="button" class="tt-btn-sec danger tt-del-btn" id="ttDelDayBtn" title="Supprimer les sessions de la sélection en cours">Supprimer</button><button class="export-btn" id="ttExportDayBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
           <path d="M7 10l5 5 5-5"></path>
@@ -3200,7 +3201,7 @@
   </div>
 
   <div class="panel">
-    <div class="list-head"><h2>Durée par activité et par semaine</h2><button class="export-btn" id="ttExportWeekBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
+    <div class="list-head"><h2>Durée par activité et par semaine</h2><button type="button" class="tt-btn-sec danger tt-del-btn" id="ttDelWeekBtn" title="Supprimer les sessions de la sélection en cours">Supprimer</button><button class="export-btn" id="ttExportWeekBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
           <path d="M7 10l5 5 5-5"></path>
@@ -3219,6 +3220,7 @@
         <option value="summary">Résumé par agent et par activité</option>
         <option value="detail">Détail des sessions</option>
       </select>
+      <button type="button" class="tt-btn-sec danger tt-del-btn" id="ttDelLogBtn" style="margin-left:0;" title="Supprimer les sessions de la sélection en cours">Supprimer</button>
       <button class="export-btn" id="ttExportLogBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
@@ -7425,7 +7427,19 @@
   function uidOf(s){ return s.uid || (s.uid = s.agent + '|' + s.activity + '|' + s.start); }
   let remote = []; // sessions de tous les agents lues sur le serveur (superviseurs)
   const STALE_MS = 150000; // session distante sans signal depuis 2,5 min => considérée terminée
+  // Sessions supprimées par l'utilisateur (masquées même si le serveur les renvoie encore).
+  const DEL_KEY = 'portal_time_tracking_deleted_v1';
+  function loadDeleted(){
+    try { const a = JSON.parse(localStorage.getItem(DEL_KEY) || '[]'); return new Set(Array.isArray(a) ? a : []); }
+    catch(e){ return new Set(); }
+  }
+  let deletedUids = loadDeleted();
+  function saveDeleted(){ try { localStorage.setItem(DEL_KEY, JSON.stringify(Array.from(deletedUids))); } catch(e){} }
   function view(){
+    const all = viewAll();
+    return deletedUids.size ? all.filter(s => !deletedUids.has(s.uid || uidOf(s))) : all;
+  }
+  function viewAll(){
     if (!remote.length) return sessions;
     const now = Date.now(), map = new Map();
     remote.forEach(r => {
@@ -7652,9 +7666,15 @@
   function existingDays(){
     const set = new Set(), now = Date.now();
     view().forEach(x => {
-      const e = startOfDay(new Date(x.end == null ? now : x.end)).getTime();
+      const xe = x.end == null ? now : x.end;
+      if (xe - x.start < 1000) return; // durée nulle : aucune activité réellement effectuée
+      const e = startOfDay(new Date(xe)).getTime();
       let t = startOfDay(new Date(x.start)).getTime();
-      for (let n = 0; t <= e && n < 400; n++) { set.add(t); t = addDays(new Date(t), 1).getTime(); }
+      for (let n = 0; t <= e && n < 400; n++) {
+        // ne retient que les jours où la session a un temps positif
+        if (overlap(x, t, addDays(new Date(t), 1).getTime(), now) > 0) set.add(t);
+        t = addDays(new Date(t), 1).getTime();
+      }
     });
     return Array.from(set).sort((p, q) => q - p);
   }
@@ -7808,6 +7828,8 @@
       + `<tr style="font-weight:700;"><td>TOTAL</td>${m.rows.map(r => `<td${hl(r)}>${cell(r.total)}</td>`).join('')}<td><span class="duration">${hms(m.grand)}</span></td></tr>`;
   }
   const MAX_DAYS = 93, MAX_WEEKS = 53;
+  // Vrai si au moins une session a un temps positif dans [a, b) (périodes vides exclues).
+  function hasTime(rows, a, b, now, iv){ return rows.some(s => overlapIn(s, a, b, now, iv) > 0); }
   function renderMatrices(agentRows, now, R){
     const iv = R.intervals;
     const todayStart = startOfDay(new Date()).getTime();
@@ -7825,7 +7847,7 @@
     const days = [];
     for (let t = startOfDay(new Date(hi - 1)); t.getTime() >= lo && days.length < MAX_DAYS; t = addDays(t, -1)) {
       const a = t.getTime(), b = addDays(t, 1).getTime();
-      if (covered(iv, a, b)) days.unshift({ label: dmy(t), from:a, to:b, highlight: a === todayStart });
+      if (covered(iv, a, b) && hasTime(agentRows, a, b, now, iv)) days.unshift({ label: dmy(t), from:a, to:b, highlight: a === todayStart });
     }
     lastDayMatrix = buildMatrix(days, agentRows, now, iv);
     drawMatrix(lastDayMatrix, dayHead, dayBody, 'Jour');
@@ -7834,7 +7856,7 @@
     const weeks = [];
     for (let mon = mondayOf(new Date(hi - 1)); addDays(mon, 7).getTime() > lo && weeks.length < MAX_WEEKS; mon = addDays(mon, -7)) {
       const a = mon.getTime(), b = addDays(mon, 7).getTime();
-      if (covered(iv, a, b)) weeks.unshift({ mon, label:`S${isoWeek(mon)}`, from:a, to:b, highlight: a === thisMonday });
+      if (covered(iv, a, b) && hasTime(agentRows, a, b, now, iv)) weeks.unshift({ mon, label:`S${isoWeek(mon)}`, from:a, to:b, highlight: a === thisMonday });
     }
     if (weeks.length && isoYearOf(weeks[0].mon) !== isoYearOf(weeks[weeks.length - 1].mon)) {
       weeks.forEach(w => { w.label += '/' + String(isoYearOf(w.mon)).slice(2); });
@@ -7943,6 +7965,36 @@
   }
   scopeSel.addEventListener('change', render);
   logView.addEventListener('change', render);
+
+  // ---- Suppression : supprime les sessions terminées de la sélection en cours (période + nom). ----
+  function pushDelete(uids){
+    const url = ttUrl();
+    if (!url || !uids.length) return;
+    fetch(url + '?module=temps', {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'tt_delete', uids })
+    }).catch(() => {});
+  }
+  function deleteSelection(){
+    const { rows, R } = filtered();
+    const now = Date.now();
+    const targets = rows.filter(s => s.end != null && s !== current && overlapIn(s, -Infinity, Infinity, now, R.intervals) > 0);
+    if (!targets.length) { alert('Aucune session terminée à supprimer pour la sélection en cours.'); return; }
+    const who = scopeSel.value || 'tous les agents';
+    if (!confirm(`Supprimer définitivement ${targets.length} session(s) (${R.label} — ${who}) ?\n\nLes sessions concernées sont supprimées en entier, dans tous les tableaux. Cette action est irréversible.`)) return;
+    const uids = targets.map(s => s.uid || uidOf(s));
+    uids.forEach(u => deletedUids.add(u));
+    saveDeleted();
+    const gone = new Set(uids);
+    sessions = sessions.filter(s => !gone.has(uidOf(s)));
+    remote = remote.filter(s => !gone.has(s.uid));
+    save();
+    pushDelete(uids);
+    lastNames = ''; periodSig = '';
+    rebuildPeriodOptions();
+    render();
+  }
+  ['ttDelSummaryBtn','ttDelDayBtn','ttDelWeekBtn','ttDelLogBtn'].forEach(id => document.getElementById(id).addEventListener('click', deleteSelection));
 
   // Actualiser : recharge les données enregistrées et réaffiche — aucune donnée n'est supprimée.
   document.getElementById('ttRefreshBtn').addEventListener('click', () => {
