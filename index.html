@@ -1068,6 +1068,7 @@
 .tt-live b{ color:#fff; font-family:var(--mono); font-weight:600; }
 @keyframes ttPulse{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
 .tt-wrap{ max-width:none; width:100%; margin:0; padding:24px 24px 60px; display:flex; flex-direction:column; gap:24px; }
+.tt-wrap > .panel:first-child{ position:sticky; top:var(--tt-nav-h, 60px); z-index:60; box-shadow:0 6px 14px rgba(20,30,50,0.12); }
 .tt-toolbar{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
 .tt-toolbar .field{ margin:0; }
 .tt-toolbar .field input{ width:auto; }
@@ -1125,6 +1126,9 @@
 .tt-agentmx td.mx-tot{ font-weight:700; background:#fff; }
 .tt-agentmx tbody tr:nth-child(even) td:not(.mx-heat){ background:#f6f9fc; }
 .tt-agentmx tr.tt-grand td{ background:#fff !important; font-weight:700; border-top:2px solid #152238; }
+.tt-actions{ display:flex; align-items:center; gap:10px; }
+.tt-del-btn{ display:none; padding:10px 14px; border:1.5px solid #e3b5b0; border-radius:8px; background:#fff; color:#c0392b; font-family:var(--body); font-weight:600; font-size:0.84rem; cursor:pointer; }
+.tt-del-btn:hover{ background:#c0392b; border-color:#c0392b; color:#fff; }
 .tt-btn-sec{
   padding:10px 14px; border:1.5px solid var(--line); border-radius:6px; background:#fff;
   font-family:var(--body); font-weight:600; font-size:0.84rem; color:var(--ink-soft); cursor:pointer;
@@ -1554,7 +1558,7 @@
 <!-- ÉCRAN DE CONNEXION OBLIGATOIRE — accès agents (nom + mot de passe individuel) -->
 <div class="agent-login-overlay show" id="agentLoginOverlay">
   <div class="agent-login-box">
-    <p class="brand">USERS_ACCES</p>
+    <p class="brand">USERS_ACCESt</p>
     <p class="sub">Connectez-vous ici.</p>
     <div class="field">
       <label for="agentLoginName">Nom d'agent</label>
@@ -3168,17 +3172,17 @@
   <div class="tt-kpis">
     <div class="tt-kpi"><div class="k-top">Temps total</div><div class="k-val" id="ttKpiTotal">00:00:00</div></div>
     <div class="tt-kpi"><div class="k-top">Activité principale</div><div class="k-val" id="ttKpiTop">—</div></div>
-    <div class="tt-kpi"><div class="k-top">Sessions</div><div class="k-val" id="ttKpiSessions">0</div></div>
+    <div class="tt-kpi"><div class="k-top">Agents connectés</div><div class="k-val" id="ttKpiSessions">0</div></div>
   </div>
 
   <div class="panel">
-    <div class="list-head"><h2>Jour × activité</h2><button class="export-btn" id="ttExportSummaryBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
+    <div class="list-head"><h2>Jour × activité</h2><span class="tt-actions"><button type="button" class="tt-del-btn" data-ttdel="ttExportSummaryBtn" title="Supprimer les sessions de ce tableau"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px;"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg>Supprimer</button><button class="export-btn" id="ttExportSummaryBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
           <path d="M7 10l5 5 5-5"></path>
           <path d="M5 19h14"></path>
         </svg>
-      </button></div>
+      </button></span></div>
     <p class="sub">temps cumulé, format hh:mm:ss</p>
     <div class="table-scroll tt-matrix-scroll">
       <table id="ttTable" class="tt-matrix tt-agentmx"><thead id="ttJxHead"></thead><tbody id="ttJxBody"></tbody></table>
@@ -3186,30 +3190,16 @@
   </div>
 
   <div class="panel">
-    <div class="list-head"><h2>Semaine × activité</h2><button class="export-btn" id="ttExportDayBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
+    <div class="list-head"><h2>Semaine × activité</h2><span class="tt-actions"><button type="button" class="tt-del-btn" data-ttdel="ttExportDayBtn" title="Supprimer les sessions de ce tableau"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px;"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg>Supprimer</button><button class="export-btn" id="ttExportDayBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
           <path d="M7 10l5 5 5-5"></path>
           <path d="M5 19h14"></path>
         </svg>
-      </button></div>
+      </button></span></div>
     <p class="sub">temps cumulé, format hh:mm:ss</p>
     <div class="table-scroll tt-matrix-scroll">
       <table id="ttDayTable" class="tt-matrix tt-agentmx"><thead id="ttSxHead"></thead><tbody id="ttSxBody"></tbody></table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="list-head"><h2>Durée par activité et par semaine</h2><button class="export-btn" id="ttExportWeekBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3v12"></path>
-          <path d="M7 10l5 5 5-5"></path>
-          <path d="M5 19h14"></path>
-        </svg>
-      </button></div>
-    <p class="sub" id="ttWeekSub">Les semaines de la période sélectionnée.</p>
-    <div class="table-scroll tt-matrix-scroll">
-      <table id="ttWeekTable" class="tt-matrix"><thead id="ttWeekHead"></thead><tbody id="ttWeekBody"></tbody></table>
     </div>
   </div>
 
@@ -3219,13 +3209,13 @@
         <option value="summary">Temps par agent par activité</option>
         <option value="detail">Journal des sessions (détail)</option>
       </select>
-      <button class="export-btn" id="ttExportLogBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
+      <span class="tt-actions"><button type="button" class="tt-del-btn" data-ttdel="ttExportLogBtn" title="Supprimer les sessions de ce tableau"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px;"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg>Supprimer</button><button class="export-btn" id="ttExportLogBtn" title="Exporter en CSV" aria-label="Exporter en CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"></path>
           <path d="M7 10l5 5 5-5"></path>
           <path d="M5 19h14"></path>
         </svg>
-      </button></div>
+      </button></span></div>
     <div id="ttLogEmpty" class="empty-state"><div class="glyph">⏱</div><p>Aucune session pour cette période.</p></div>
     <div class="table-scroll tt-matrix-scroll tt-vscroll">
       <table id="ttLogTable" class="tt-matrix" style="display:none;">
@@ -7423,10 +7413,20 @@
   // les superviseurs relisent les sessions de TOUS les agents. Sans URL configurée, tout reste local.
   function ttUrl(){ const u = window.API_URL || ''; return u.includes('COLLEZ_ICI') ? '' : u; }
   function uidOf(s){ return s.uid || (s.uid = s.agent + '|' + s.activity + '|' + s.start); }
+  // Sessions supprimées par le superviseur (mémorisées pour ne pas réapparaître à la relecture du serveur).
+  const DEL_KEY = 'portal_time_tracking_deleted_v1';
+  function deletedSet(){ try { return new Set(JSON.parse(localStorage.getItem(DEL_KEY) || '[]')); } catch(e){ return new Set(); } }
+  function addDeleted(uids){ try { const a = Array.from(deletedSet()); uids.forEach(u => a.push(u)); localStorage.setItem(DEL_KEY, JSON.stringify(Array.from(new Set(a)).slice(-5000))); } catch(e){} }
   let remote = []; // sessions de tous les agents lues sur le serveur (superviseurs)
   const STALE_MS = 150000; // session distante sans signal depuis 2,5 min => considérée terminée
+  // Ignore les sessions sans date valide (ex. cellule vide du Gsheet lue comme 0 => 1970).
+  function okSession(x){
+    const a = Number(x && x.start), e = x.end == null || x.end === '' ? null : Number(x.end);
+    return isFinite(a) && a > 946684800000 && (e == null || (isFinite(e) && e >= a));
+  }
   function view(){
-    if (!remote.length) return sessions;
+    const gone = deletedSet();
+    if (!remote.length) return sessions.filter(l => okSession(l) && !gone.has(uidOf(l)));
     const now = Date.now(), map = new Map();
     remote.forEach(r => {
       const x = Object.assign({}, r);
@@ -7434,7 +7434,8 @@
       map.set(x.uid, x);
     });
     sessions.forEach(l => map.set(uidOf(l), l)); // la version locale (plus fraîche) prime
-    return Array.from(map.values());
+    gone.forEach(u => map.delete(u));
+    return Array.from(map.values()).filter(okSession);
   }
   function pushSession(s, keepalive){
     const url = ttUrl();
@@ -7466,7 +7467,7 @@
       if (d && d.ok && Array.isArray(d.sessions)) {
         remote = d.sessions.map(x => ({ uid:String(x.uid), agent:String(x.agent), activity:String(x.activity),
           start:Number(x.start), end:(x.end === '' || x.end == null) ? null : Number(x.end), seen:Number(x.seen) || 0 }))
-          .filter(x => x.uid && x.agent && LABELS[x.activity] && isFinite(x.start));
+          .filter(x => x.uid && x.agent && LABELS[x.activity] && okSession(x));
         lastNames = ''; periodSig = '';
         render();
       }
@@ -7774,8 +7775,6 @@
   const jxHead = document.getElementById('ttJxHead'), jxBody = document.getElementById('ttJxBody');
   const sxHead = document.getElementById('ttSxHead'), sxBody = document.getElementById('ttSxBody');
   let lastJx = null, lastSx = null;
-  const weekHead = document.getElementById('ttWeekHead');
-  const weekBody = document.getElementById('ttWeekBody');
   let lastDayMatrix = null, lastWeekMatrix = null;
 
   function isoWeek(d){
@@ -7841,11 +7840,13 @@
     }
     if (!isFinite(hi)) hi = todayStart + DAY;
 
+    // Seules les dates qui ont du temps enregistré (présentes dans le Gsheet) sont affichées.
+    const hasData = (a, b) => agentRows.some(x => overlapIn(x, a, b, now, iv) > 0);
     // Par jour : les jours couverts par la période (les plus récents si > MAX_DAYS)
     const days = [];
     for (let t = startOfDay(new Date(hi - 1)); t.getTime() >= lo && days.length < MAX_DAYS; t = addDays(t, -1)) {
       const a = t.getTime(), b = addDays(t, 1).getTime();
-      if (covered(iv, a, b)) days.unshift({ label: dmy(t), from:a, to:b, highlight: a === todayStart });
+      if (covered(iv, a, b) && hasData(a, b)) days.unshift({ label: dmy(t), from:a, to:b, highlight: a === todayStart });
     }
     const wdShort = d => d.toLocaleDateString('fr-FR', { weekday:'short' }).replace('.', '');
     lastJx = buildMatrix(days.map(d => ({ ...d, label: wdShort(new Date(d.from)) + ' ' + fmtDM(new Date(d.from)) })), agentRows, now, iv);
@@ -7855,18 +7856,11 @@
     const weeks = [];
     for (let mon = mondayOf(new Date(hi - 1)); addDays(mon, 7).getTime() > lo && weeks.length < MAX_WEEKS; mon = addDays(mon, -7)) {
       const a = mon.getTime(), b = addDays(mon, 7).getTime();
-      if (covered(iv, a, b)) weeks.unshift({ mon, label:`S${isoWeek(mon)}`, from:a, to:b, highlight: a === thisMonday });
+      if (covered(iv, a, b) && hasData(a, b)) weeks.unshift({ mon, label:`S${isoWeek(mon)}`, from:a, to:b, highlight: a === thisMonday });
     }
-    if (weeks.length && isoYearOf(weeks[0].mon) !== isoYearOf(weeks[weeks.length - 1].mon)) {
-      weeks.forEach(w => { w.label += '/' + String(isoYearOf(w.mon)).slice(2); });
-    }
-    document.getElementById('ttWeekSub').textContent = 'Les semaines de la période sélectionnée (les jours hors période ne sont pas comptés)'
-      + (weeks.length >= MAX_WEEKS ? ` — les ${MAX_WEEKS} dernières semaines sont affichées.` : '.');
     const dm = d => d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
     lastSx = buildMatrix(weeks.map(w => ({ ...w, label: `S${isoWeek(w.mon)} (${dm(w.mon)} – ${dm(addDays(w.mon, 6))})` })), agentRows, now, iv);
     drawPeriodMatrix(lastSx, sxHead, sxBody, 'Semaine');
-    lastWeekMatrix = buildMatrix(weeks, agentRows, now, iv);
-    drawMatrix(lastWeekMatrix, weekHead, weekBody, 'Semaine');
   }
 
   function render(){
@@ -7895,10 +7889,11 @@
     let topKey = null;
     Object.keys(per).forEach(k => { if (per[k].ms > 0 && (!topKey || per[k].ms > per[topKey].ms)) topKey = k; });
 
+    document.querySelectorAll('.tt-del-btn').forEach(b => { b.style.display = (window.PORTAL_isSupervisor && window.PORTAL_isSupervisor()) ? 'inline-block' : 'none'; });
     renderMatrices(rows, now, R);
     document.getElementById('ttKpiTotal').textContent = hms(total);
     document.getElementById('ttKpiTop').textContent = topKey ? LABELS[topKey] : '—';
-    document.getElementById('ttKpiSessions').textContent = sessionsCount;
+    document.getElementById('ttKpiSessions').textContent = new Set(log.map(l => l.agent).filter(Boolean)).size;
 
     log.sort((a,b) => b.start - a.start);
     lastLog = log;
@@ -7967,6 +7962,34 @@
       }
     }
   }
+
+  // ---- Suppression : retire les sessions affichées (période + nom sélectionnés) ----
+  const isSup = () => !!(window.PORTAL_isSupervisor && window.PORTAL_isSupervisor());
+  document.querySelectorAll('.tt-del-btn').forEach(b => b.addEventListener('click', () => {
+    if (!isSup()) return;
+    const { rows, R } = filtered(), now = Date.now();
+    const targets = rows.filter(s => s !== current && overlapIn(s, s.start, Math.max(s.start, s.end == null ? now : s.end), now, R.intervals) > 0
+      && !(current && uidOf(s) === uidOf(current)));
+    if (!targets.length) { alert('Aucune session à supprimer pour cette sélection.'); return; }
+    const who = scopeSel.value || 'tous les agents';
+    if (!confirm(`Supprimer ${targets.length} session(s) ?\n\nPériode : ${R.label}\nAgent : ${who}\n\nCette action est définitive.`)) return;
+    const uids = targets.map(uidOf), set = new Set(uids);
+    sessions = sessions.filter(l => !set.has(uidOf(l)));
+    remote = remote.filter(r => !set.has(r.uid));
+    save(); addDeleted(uids);
+    const url = ttUrl();
+    if (url) fetch(url + '?module=temps', { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ action:'tt_delete', uids }) }).catch(() => {});
+    lastNames = ''; periodSig = '';
+    rebuildPeriodOptions(); render();
+  }));
+
+  // Hauteur de la barre de navigation : la zone de filtres figée se place juste dessous.
+  (function(){
+    const nav = document.querySelector('.portal-nav');
+    const setH = () => { if (nav) document.documentElement.style.setProperty('--tt-nav-h', nav.offsetHeight + 'px'); };
+    setH(); window.addEventListener('resize', setH);
+    if (window.ResizeObserver && nav) new ResizeObserver(setH).observe(nav);
+  })();
   scopeSel.addEventListener('change', render);
   logView.addEventListener('change', render);
 
@@ -8007,7 +8030,6 @@
       filename);
   }
   document.getElementById('ttExportDayBtn').addEventListener('click', () => exportPeriodMatrix(lastSx, 'Semaine', `semaine_par_activite_${getRange().key}${who()}.csv`));
-  document.getElementById('ttExportWeekBtn').addEventListener('click', () => exportMatrix(lastWeekMatrix, 'Semaine', `duree_par_semaine_${getRange().key}${who()}.csv`));
   document.getElementById('ttExportLogBtn').addEventListener('click', () => {
     if (logView.value === 'detail') {
       downloadCsv(['Nom','Activité','Début','Fin','Durée (hh:mm:ss)'],
