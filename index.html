@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<!-- build 2026-11-24 : boutons FreePro (VDC) + My976 (Mails) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
@@ -1445,6 +1446,27 @@
 .aux-now{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:10px 14px; margin-bottom:12px; border:1.5px solid #C2185B; border-radius:8px; background:#FFF5F9; font-size:.86rem; color:var(--ink); }
 .aux-stop-btn{ padding:8px 16px; border:1.5px solid #C2185B; border-radius:8px; background:#C2185B; color:#fff; font-weight:700; font-size:.82rem; cursor:pointer; box-shadow:0 3px 0 #8E1244; }
 .aux-stop-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 #8E1244; }
+
+/* Guichet VDC : panneau de formulaire élargi (3 boutons Zone : RUN / MAY / FreePro) */
+#app-vdc .layout{ max-width:1500px; grid-template-columns:480px minmax(0,1fr); }
+@media (max-width:880px){ #app-vdc .layout{ grid-template-columns:1fr; } }
+#app-vdc .toggle-row[data-group="zone"] .toggle-btn{ white-space:nowrap; }
+#app-mails .toggle-row[data-group="comptes"] .toggle-btn{ white-space:nowrap; }
+/* Mails : pleine largeur (suppression des marges vides gauche/droite) */
+#app-mails .stack-layout{ max-width:none; margin:0; padding:24px 12px 60px; }
+#app-mails .stack-field-grid{ grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); }
+/* Guichet VDC : les 3 cartes ont la même largeur/alignement que le formulaire + tableau */
+#app-vdc .stats-row{ max-width:1500px; }
+/* Mails : grille 12 colonnes (écran large) — ligne 1 : Date réception / Début traitement / Canal / ID Activités ;
+   ligne 2 : Comptes (sous Date réception) / Backlog / Remarques */
+@media (min-width:900px){
+  #app-mails .stack-field-grid{ grid-template-columns:repeat(12, 1fr); }
+  #app-mails .stack-field-grid > :nth-child(-n+4){ grid-column:span 3 !important; }
+  #app-mails .stack-field-grid > :nth-child(5){ grid-column:1 / span 3 !important; grid-row:2; }
+  #app-mails .stack-field-grid > :nth-child(6){ grid-column:4 / span 3 !important; grid-row:2; }
+  #app-mails .stack-field-grid > :nth-child(7){ grid-column:7 / span 6 !important; grid-row:2; }
+  #app-mails .stack-field-grid > :nth-child(8){ grid-column:1 / -1 !important; grid-row:3; }
+}
 </style>
 </head>
 <body>
@@ -1876,9 +1898,10 @@
 
       <div class="toggle-group">
         <label>Zone</label>
-        <div class="toggle-row" data-group="zone">
+        <div class="toggle-row" data-group="zone" style="grid-template-columns:1fr 1fr 1fr;">
           <button type="button" class="toggle-btn" data-value="RUN">RUN</button>
           <button type="button" class="toggle-btn" data-value="MAY">MAY</button>
+          <button type="button" class="toggle-btn" data-value="FreePro">FreePro</button>
         </div>
       </div>
 
@@ -2180,6 +2203,7 @@
           <option value="">Sélectionner...</option>
           <option value="RUN">RUN</option>
           <option value="MAY">MAY</option>
+          <option value="My976">My976</option>
         </select>
       </div>
       <div class="facebook-field">
@@ -2437,11 +2461,12 @@
           <input type="text" id="mail-idActivite" placeholder="ID Activités" required>
         </div>
 
-        <div class="toggle-group" style="margin-bottom:0;">
+        <div class="toggle-group" style="margin-bottom:0;grid-column:span 2;">
           <label>Comptes</label>
-          <div class="toggle-row" data-group="comptes">
+          <div class="toggle-row" data-group="comptes" style="grid-template-columns:1fr 1fr 1fr;">
             <button type="button" class="toggle-btn" data-value="RUN">RUN</button>
             <button type="button" class="toggle-btn" data-value="MAY">MAY</button>
+            <button type="button" class="toggle-btn" data-value="My976">My976</button>
           </div>
         </div>
 
